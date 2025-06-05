@@ -1,0 +1,188 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: connection-test
+  labels:
+    app: connection-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: connection-test
+  template:
+    metadata:
+      labels:
+        app: connection-test
+    spec:
+      containers:
+      - name: connection-test
+        image: python:3.9-slim
+        workingDir: /app
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          pip install -r requirements.txt
+          python connection_test.py
+        volumeMounts:
+        - name: app-volume
+          mountPath: /app
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      volumes:
+      - name: app-volume
+        configMap:
+          name: connection-test-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: connection-test-config
+data:
+  connection_test.py: |
+    #!/usr/bin/env python3
+
+    import requests
+    import websockets
+    import asyncio
+    import ssl
+    import socket
+    from datetime import datetime
+    from rich.console import Console
+    from rich.table import Table
+    from rich import print as rprint
+    from rich.panel import Panel
+    from rich.text import Text
+    from requests.adapters import HTTPAdapter
+    from urllib3.util.retry import Retry
+    import time
+
+    # Initialize Rich console for pretty output
+    console = Console()
+
+    # Configure requests session with no retries
+    session = requests.Session()
+    session.mount('https://', HTTPAdapter(max_retries=0))
+
+    # List of endpoints to test
+    ENDPOINTS = [
+        {
+            "name": "Transport Layer",
+            "url": "wss://transport-layer.prod-eu.msap.io:443",
+            "type": "websocket"
+        },
+        {
+            "name": "Anypoint Platform",
+            "url": "https://eu1.anypoint.mulesoft.com",
+            "type": "https"
+        },
+        {
+            "name": "Configuration Resolver",
+            "url": "https://configuration-resolver.prod-eu.msap.io:443",
+            "type": "https"
+        },
+        {
+            "name": "Runtime Registry",
+            "url": "https://rtf-runtime-registry.kprod-eu.msap.io",
+            "type": "https"
+        },
+        {
+            "name": "Starport Layer Bucket",
+            "url": "https://prod-eu-central-1-starport-layer-bucket.s3.eu-central-1.amazonaws.com",
+            "type": "https"
+        },
+        {
+            "name": "Runtime Fabric S3",
+            "url": "https://runtime-fabric-eu.s3.amazonaws.com",
+            "type": "https"
+        },
+        {
+            "name": "Mulesoft Ingest",
+            "url": "https://eu1.ingest.mulesoft.com/api/v2",
+            "type": "https"
+        },
+        {
+            "name": "Worker Cloud Helm",
+            "url": "https://worker-cloud-helm-prod-eu-rt.s3.amazonaws.com",
+            "type": "https"
+        },
+        {
+            "name": "Starport Layer Bucket (Duplicate)",
+            "url": "https://prod-eu-central-1-starport-layer-bucket.s3.eu-central-1.amazonaws.com",
+            "type": "https"
+        },
+        {
+            "name": "Exchange Asset Manager",
+            "url": "https://exchange2-asset-manager-kprod-eu.s3.amazonaws.com",
+            "type": "https"
+        }
+    ]
+
+    async def test_websocket(url):
+        try:
+            async with websockets.connect(
+                url,
+                ssl=ssl.create_default_context(),
+                close_timeout=10,
+                open_timeout=10
+            ) as websocket:
+                return True, "Connected successfully"
+        except Exception as e:
+            return False, str(e)
+
+    def test_https(url):
+        try:
+            response = session.get(url, timeout=10)
+            return True, f"Status: {response.status_code}"
+        except requests.exceptions.RequestException as e:
+            return False, str(e)
+
+    async def run_tests():
+        # Print timestamp
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        console.print(Panel(f"Connection Test Started at: {current_time}", style="bold blue"))
+        console.print()
+
+        for endpoint in ENDPOINTS:
+            # Create a panel for each endpoint
+            start_time = datetime.now()
+            
+            if endpoint["type"] == "websocket":
+                success, message = await test_websocket(endpoint["url"])
+            else:
+                success, message = test_https(endpoint["url"])
+                
+            end_time = datetime.now()
+            response_time = (end_time - start_time).total_seconds()
+            
+            status = "✅ Connected" if success else "❌ Failed"
+            status_style = "green" if success else "red"
+            
+            # Create a detailed panel for each endpoint
+            content = f"""
+            URL: {endpoint['url']}
+            Status: [{status_style}]{status}[/{status_style}]
+            Response Time: {response_time:.2f}s
+            Details: {message}
+            """
+            
+            console.print(Panel(content, title=f"Testing: {endpoint['name']}", border_style="blue"))
+            console.print()  # Add spacing between panels
+
+    async def main():
+        while True:
+            await run_tests()
+            # Wait for 2 minutes before next run
+            console.print(Panel("Waiting 2 minutes before next test run...", style="yellow"))
+            await asyncio.sleep(120)  # 120 seconds = 2 minutes
+
+    if __name__ == "__main__":
+        asyncio.run(main())
+  requirements.txt: |
+    requests==2.31.0
+    websockets==12.0
+    rich==13.7.0 
