@@ -67,8 +67,7 @@ echo "Step 2: kubectl create secret docker-registry rtf-pull-secret --namespace 
 kubectl create secret docker-registry rtf-pull-secret --namespace $RTF_NAMESPACE \
 --docker-server=$DOCKER_REGISTRY \
 --docker-username=$DOCKER_USERNAME \
---docker-password=xyz
-#--docker-password=$DOCKER_PW
+--docker-password=$DOCKER_PW
 
 ERR=$?
 if [ $ERR -ne 0 ]; then
