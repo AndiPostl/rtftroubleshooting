@@ -10,6 +10,13 @@ For Linux
 ```
 curl -L https://anypoint.mulesoft.com/runtimefabric/api/download/rtfctl/latest -o rtfctl
 ```
+
+# Prepare 
+
+Download this repo
+```
+curl -L -o rtftroubleshooting.zip https://github.com/AndiPostl/rtftroubleshooting/archive/refs/heads/main.zip
+```
 ```
 unzip rtftroubleshooting.zip 
 ```
@@ -19,14 +26,6 @@ cd rtftroubleshooting
 ```
 chmod +x *.sh 
 ```
-
-# Prepare 
-
-Download this repo
-```
-curl -L -o rtftroubleshooting.zip https://github.com/AndiPostl/rtftroubleshooting/archive/refs/heads/main.zip
-```
-
 
 
 # Delete RTF
