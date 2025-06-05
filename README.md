@@ -3,13 +3,31 @@
 
 Helm and kubectl need to be installed and configured.
 
-Install rtfclt 
+Install rtfclt (only intel/AMD NOT ARM architecture)
 https://docs.mulesoft.com/runtime-fabric/latest/install-rtfctl
 
 For Linux 
 ```
 curl -L https://anypoint.mulesoft.com/runtimefabric/api/download/rtfctl/latest -o rtfctl
 ```
+```
+unzip rtftroubleshooting.zip 
+```
+```
+cd rtftroubleshooting
+```
+```
+chmod +x *.sh 
+```
+
+# Prepare 
+
+Download this repo
+```
+curl -L -o rtftroubleshooting.zip https://github.com/AndiPostl/rtftroubleshooting/archive/refs/heads/main.zip
+```
+
+
 
 # Delete RTF
 ```
@@ -24,6 +42,8 @@ curl -L https://anypoint.mulesoft.com/runtimefabric/api/download/rtfctl/latest -
 # Check installation
 ```
 kubectl get pods -n rtf
+```
+```
 ./checkRTF.sh
 ```
 
@@ -47,6 +67,10 @@ Clean OKE image cache for MuleSoft
 # Python connectivity test
 ```
 kubectl apply -f connectiontest-deployment.yaml -n rtf
+```
+```
 kubectl get pods -n rtf
+```
+```
 kubectl logs -f -n rtf connection-test-xxxxx
 ```
